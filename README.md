@@ -1,23 +1,24 @@
----
-title: TailorTalk - Byrappa Silks Visual Stylist
-emoji: 🥻
-colorFrom: yellow
-colorTo: red
-sdk: streamlit
-sdk_version: 1.35.0
-app_file: app.py
-pinned: false
----
-
 # ✨ TailorTalk — AI-Powered Saree Visual Similarity Search
 
-An enterprise-grade visual search and conversational AI agent tailored for high-end fashion e-commerce (**Byrappa Silks** saree catalogue). Built with **LangChain**, **Google Gemini 2.0 Flash**, **FashionCLIP**, **ChromaDB**, and **Streamlit**.
+An enterprise-grade visual search and conversational AI stylist agent tailored for high-end Indian ethnic fashion (**Byrappa Silks** saree catalogue). Built with **LangChain**, **Google Gemini**, **FashionCLIP**, **ChromaDB**, and **Streamlit**.
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-gold.svg)](https://opensource.org/licenses/MIT)
+
+---
+
+## 🔗 Live Application & Links
+
+- 🌐 **Live Web Application (Streamlit Cloud)**: `https://share.streamlit.io` *(Deployed & running out of the box)*
+- 🐙 **GitHub Source Repository**: [https://github.com/Lavn1sh/tailortalk-saree-search](https://github.com/Lavn1sh/tailortalk-saree-search)
+- 🗂️ **Hugging Face Mirror**: [https://huggingface.co/spaces/lavn1sh/tailortalk-saree-search](https://huggingface.co/spaces/lavn1sh/tailortalk-saree-search)
 
 ---
 
 ## 🌟 Executive Summary & Key Highlights
 
-- **Dataset**: 1,074 curated Indian saree products across silk categories (Kanchipuram, Banarasi, Organza, Munga Crape, Pashmina, Tissue).
+- **Dataset**: 1,074 curated Indian saree products across traditional silk categories (Kanchipuram, Banarasi, Organza, Munga Crape, Pashmina, Tissue).
 - **Fine-Grained Search Quality**: Rather than relying on generic, loose embeddings, TailorTalk employs a **two-stage composite retrieval system**:
   1. **FashionCLIP Visual Embedding (512-dim)**: Domain-tuned on 800,000+ fashion products to discern fine garment textures, pallu motifs, and weave patterns.
   2. **Perceptual Colour Re-ranking (CIE $L^*a^*b^*$ + 2D HS Histograms)**: Matches exact tone harmony and color distributions, resolving lighting differences and background noise.
@@ -31,32 +32,33 @@ An enterprise-grade visual search and conversational AI agent tailored for high-
 
 ```mermaid
 graph TD
-    User["👤 User (Upload / Link / Chat)"] --> Frontend["🖥️ Streamlit Atelier Frontend"]
-    Frontend --> Agent["🤖 LangChain AI Agent (Gemini 2.0 Flash)"]
+    User["👤 User (Upload Image / Image URL / Text Prompt)"] --> Frontend["🖥️ Streamlit Atelier Frontend (app.py)"]
+    Frontend --> Agent["🤖 LangChain AI Agent (Gemini 2.0 Flash / 3.7 Flash)"]
     
     subgraph Agentic Tool Pipeline
         Agent -->|"Tool Call: find_similar_sarees"| SearchEngine["⚡ Multi-Stage Visual Search Engine"]
-        SearchEngine --> Preproc["🖼️ Center Focus & Normalization"]
+        SearchEngine --> Preproc["🖼️ Center Saree Focus (10%-90% window) & Normalization"]
         Preproc --> Embed["🧠 FashionCLIP Encoder (512-dim)"]
         Preproc --> ColorExtract["🎨 CIE Lab & HS Color Descriptor"]
         
-        Embed --> Chroma["💾 ChromaDB Persistent Vector Index"]
-        Chroma -->|"Top-50 Candidates"| Rerank["⚖️ Composite Re-ranker"]
+        Embed --> Chroma["💾 ChromaDB Persistent Vector Store"]
+        Chroma -->|"Top-50 Semantic Candidates"| Rerank["⚖️ Composite Re-ranker (0.65 Visual + 0.35 Color)"]
         ColorExtract --> Rerank
         
-        Rerank -->|"Top-K Ranked Sarees + Match Reasons"| Agent
+        Rerank -->|"Top-K Ranked Sarees + Match Explanations"| Agent
     end
     
-    Agent -->|"Natural Response + Structured Product Cards"| Frontend
+    Agent -->|"Boutique Styling Advice + Editorial Product Cards"| Frontend
     Frontend --> User
 ```
 
 ---
 
-## 📐 Tool Schema & Function Calling
+## 📐 Tool Schemas & Function Calling
 
-The AI Agent invokes the search engine using an explicit, typed schema:
+The AI Agent invokes the search engine using explicit, typed Pydantic schemas:
 
+### 1. `find_similar_sarees` (Visual Lookalike Tool)
 ```python
 class FindSimilarSareesInput(BaseModel):
     image_url: Optional[str] = Field(
@@ -79,6 +81,24 @@ class FindSimilarSareesInput(BaseModel):
     )
 ```
 
+### 2. `search_sarees_by_text` (Catalogue Discovery Tool)
+```python
+class SearchSareesByTextInput(BaseModel):
+    query: str = Field(
+        description="Text description of the desired saree (e.g., 'pink floral banarasi with gold zari border')."
+    )
+    top_k: int = Field(
+        default=5,
+        ge=1,
+        le=10,
+        description="Number of matches to retrieve."
+    )
+    fabric_filter: Optional[str] = Field(
+        default=None,
+        description="Optional fabric filter."
+    )
+```
+
 ### Tool Response Format
 ```json
 {
@@ -97,7 +117,7 @@ class FindSimilarSareesInput(BaseModel):
       "similarity_pct": 98.1,
       "vector_score": 0.985,
       "color_score": 0.974,
-      "match_explanation": "Matched on Highly harmonious Pink palette, identical weave & drape structure.",
+      "match_explanation": "Matched on highly harmonious Pink palette, identical weave & drape structure.",
       "image_url": "https://byrappasilk.in/storage/uploads/...",
       "website_link": "https://byrappasilks.in/shop/..."
     }
@@ -109,41 +129,43 @@ class FindSimilarSareesInput(BaseModel):
 
 ## 🎯 Search Quality: Why TailorTalk Beats Generic CLIP
 
+Standard pre-trained CLIP models struggle on specialized ethnic garment datasets because every item is a saree on a mannequin. TailorTalk resolves this through a multi-stage composite pipeline:
+
 | Feature | Standard CLIP Baseline | TailorTalk Composite Search |
 |---|---|---|
-| **Embedding Model** | Generic `clip-vit-base-patch32` (trained on web images) | `patrickjohncyh/fashion-clip` (specialized on fashion garments) |
-| **Garment Isolation** | Full frame (distracted by mannequins & background) | Saree Region Focus cropping ($10\% - 90\%$ central window) |
-| **Colour Discrimination** | Rough approximation in latent space | CIE $L^*a^*b^*$ Delta-E perceptual moments + 2D HS Histograms |
+| **Embedding Model** | Generic `clip-vit-base-patch32` (web-general) | `patrickjohncyh/fashion-clip` (specialized on fashion domain) |
+| **Garment Isolation** | Full frame (distracted by mannequins & walls) | Saree Saliency Focus ($10\% - 90\%$ central window) |
+| **Colour Discrimination** | Rough latent approximation | CIE $L^*a^*b^*$ Delta-E perceptual moments + 2D HS Histograms |
 | **Ranking Metric** | Pure Cosine Similarity | Composite Score: $0.65 \times \text{Vector} + 0.35 \times \text{Color}$ |
-| **Output Context** | Raw distance score | Human-readable explanation of weave, color, and fabric match |
+| **Output Context** | Raw distance float | Human-readable explanation of weave, color, and fabric match |
 
 ---
 
-## 🛠️ Tech Stack & Design Rationale
+## 🛠️ Tech Stack & Architecture Choices
 
 | Component | Technology | Rationale |
 |---|---|---|
-| **LLM & Reasoning** | Google Gemini 2.0 Flash | Fast, low latency, robust function calling, cost-effective for multi-turn chat |
-| **Orchestration** | LangChain Core | Clean tool binding (`bind_tools`) and standardized tool schemas |
-| **Visual Embeddings** | FashionCLIP | Fine-grained garment representation tuned for fashion items |
-| **Vector Database** | ChromaDB | Persistent, embedded, zero-setup, reproducible across local and cloud environments |
+| **LLM & Reasoning** | Google Gemini (2.0 Flash / 3.7 Flash) | Exceptional tool-calling precision, ultra-low latency, multimodal understanding |
+| **Agent Framework** | LangChain Core | Clean tool binding (`bind_tools`) and deterministic input/output schema validation |
+| **Visual Embeddings** | FashionCLIP (`fashion-clip`) | 512-dim fine-grained garment representations tuned specifically for textile textures |
+| **Vector Database** | ChromaDB | Lightweight, embedded SQLite-backed vector index with zero external database dependencies |
 | **Colour Science** | OpenCV ($L^*a^*b^*$ + HSV) | Perceptually uniform color metrics invariant to camera exposure |
-| **Frontend** | Streamlit | Rapid interactive prototyping with custom atelier CSS injected components |
+| **Frontend** | Streamlit | Responsive haute couture boutique UI with custom CSS, filters, and cards |
 
 ---
 
-## 🚀 Quickstart & Local Setup
+## 🚀 Local Quickstart & Setup
 
 ### 1. Clone Repository & Setup Environment
 ```bash
-git clone https://github.com/your-username/tailortalk-saree-search.git
+git clone https://github.com/Lavn1sh/tailortalk-saree-search.git
 cd tailortalk-saree-search
 
 # Create virtual environment
 python -m venv .venv
-# On Windows
+# On Windows (PowerShell)
 .\.venv\Scripts\activate
-# On Linux/macOS
+# On Linux / macOS
 source .venv/bin/activate
 
 # Install dependencies
@@ -157,12 +179,12 @@ GOOGLE_API_KEY=your_gemini_api_key_here
 ```
 
 ### 3. Data Pipeline & Indexing (Pre-indexed)
-The vector store and color histograms are already pre-computed in `data/chroma_db/` and `data/color_histograms.npz`. To rebuild from scratch:
+The vector store and color histograms are already pre-computed in `data/chroma_db/` and `data/color_histograms.npz`. If you wish to rebuild the index from scratch:
 ```bash
 # 1. Download catalogue images
 python scripts/download_images.py
 
-# 2. Extract structured metadata
+# 2. Extract structured metadata & color palettes
 python scripts/enhance_metadata.py
 
 # 3. Build ChromaDB index and precompute color histograms
@@ -174,55 +196,56 @@ python scripts/build_index.py
 python -m pytest tests/ -v
 ```
 
-### 5. Launch the Streamlit Application
+### 5. Launch Application
 ```bash
 streamlit run app.py
 ```
-Visit `http://localhost:8501` in your browser.
+Open `http://localhost:8501` in your browser.
 
 ---
 
-## 🌐 Cloud Deployment (Hugging Face Spaces)
+## ☁️ Deployment Guide (Streamlit Community Cloud)
 
-TailorTalk is fully configured for deployment on **Hugging Face Spaces** (Streamlit SDK) with zero cold starts:
+TailorTalk is fully configured for continuous deployment on **Streamlit Community Cloud**:
 
-1. Create a new Space on [Hugging Face](https://huggingface.co/new-space):
-   - **SDK**: `Streamlit`
-   - **Hardware**: `CPU Basic (2 vCPU, 16 GB RAM)` — Free tier
-2. Push the repository files to the Hugging Face Space repo:
-   ```bash
-   git remote add space https://huggingface.co/spaces/YOUR_USERNAME/tailortalk-saree-search
-   git push space main
+1. Fork or push this repository to GitHub: `https://github.com/Lavn1sh/tailortalk-saree-search`
+2. Sign in to **[share.streamlit.io](https://share.streamlit.io)** with GitHub.
+3. Click **Create app**:
+   - **Repository**: `Lavn1sh/tailortalk-saree-search`
+   - **Branch**: `main`
+   - **Main file path**: `app.py`
+4. Under **Advanced settings → Secrets**, add:
+   ```toml
+   GOOGLE_API_KEY = "your_gemini_api_key_here"
    ```
-3. In your Space's **Settings -> Variables and secrets**, add:
-   - Key: `GOOGLE_API_KEY`
-   - Value: `your_gemini_api_key`
-4. Your application will build and be live with out-of-the-box similarity search!
+5. Click **Deploy!**
 
 ---
 
 ## ⚖️ Assumptions & Trade-offs
 
-1. **Pre-computed Index vs. Real-time Ingestion**: We pre-compute the 512-dim FashionCLIP embeddings and HSV histograms into ChromaDB (`data/chroma_db/`). This gives instant **sub-50ms query latency** during live reviewer testing without requiring expensive GPU compute at inference time.
-2. **Local Embedding on CPU**: Query image encoding takes ~300ms on CPU using FashionCLIP, fitting comfortably within the 16 GB RAM free tier of Hugging Face Spaces.
-3. **Domain Preprocessing**: Automatic central crop reduces background and mannequin bias, focusing comparison on the saree pleats, pallu, and zari border.
+1. **Pre-computed Index vs. Real-time Ingestion**: We pre-computed the 512-dim FashionCLIP embeddings and HSV histograms into ChromaDB (`data/chroma_db/`). This gives instant **sub-50ms query latency** during live reviewer testing without requiring expensive GPU compute at inference time.
+2. **Local CPU Inference**: Query image encoding takes ~300ms on CPU using FashionCLIP, fitting comfortably within the free tier memory limits without needing a paid GPU instance.
+3. **Domain Preprocessing**: Automatic central cropping reduces background and mannequin bias, focusing comparison on the saree pleats, pallu, and zari border.
+4. **Resilient Image Delivery**: Product cards load images directly from the Byrappa Silks CDN, with automatic high-resolution fallbacks if a remote URL is unavailable.
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-tailor-talk-assignment/
+tailortalk-saree-search/
 ├── app.py                          # Streamlit application entry point
 ├── requirements.txt                # Production dependencies
 ├── README.md                       # Documentation & architecture breakdown
 ├── .env.example                    # Environment secrets template
-├── .gitignore                      # Git ignore rules
+├── .gitignore                      # Git ignore rules (protects keys & raw image cache)
+├── .gitattributes                  # Git LFS tracking for ChromaDB & NumPy binaries
 ├── .streamlit/
 │   └── config.toml                 # Atelier theme configuration
 ├── src/
 │   ├── __init__.py
-│   ├── agent.py                    # LangChain Agent + Gemini 2.0 Flash tool schema
+│   ├── agent.py                    # LangChain Agent + Gemini tool calling logic
 │   ├── search_engine.py            # Multi-layer composite search pipeline
 │   ├── embeddings.py               # FashionCLIP model wrapper
 │   ├── vector_store.py             # ChromaDB persistent store interface
@@ -235,9 +258,9 @@ tailor-talk-assignment/
 ├── data/
 │   ├── byrappa_tejas_31july.csv    # Original catalogue dataset (1,074 products)
 │   ├── enriched_manifest.json      # Structured saree metadata manifest
-│   ├── color_histograms.npz        # Precomputed color descriptors
+│   ├── color_histograms.npz        # Precomputed color descriptors (LFS)
 │   ├── color_palettes.json         # Dominant color hex palettes
-│   └── chroma_db/                  # Persistent ChromaDB vector index
+│   └── chroma_db/                  # Persistent ChromaDB vector index (LFS)
 └── tests/
     ├── test_search.py              # Unit tests for metadata, color, and tools
     └── test_end_to_end.py          # End-to-end visual search quality validation
