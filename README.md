@@ -2,7 +2,7 @@
 
 An enterprise-grade visual search and conversational AI stylist agent tailored for high-end Indian ethnic fashion (**Byrappa Silks** saree catalogue). Built with **LangChain**, **Google Gemini**, **FashionCLIP**, **ChromaDB**, and **Streamlit**.
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://tailortalk-saree-search.streamlit.app)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-gold.svg)](https://opensource.org/licenses/MIT)
 
@@ -10,7 +10,7 @@ An enterprise-grade visual search and conversational AI stylist agent tailored f
 
 ## 🔗 Live Application & Links
 
-- 🌐 **Live Web Application (Streamlit Cloud)**: `https://share.streamlit.io` *(Deployed & running out of the box)*
+- 🌐 **Live Web Application (Streamlit Cloud)**: [https://tailortalk-saree-search.streamlit.app](https://tailortalk-saree-search.streamlit.app) *(Tested & running live)*
 - 🐙 **GitHub Source Repository**: [https://github.com/Lavn1sh/tailortalk-saree-search](https://github.com/Lavn1sh/tailortalk-saree-search)
 - 🗂️ **Hugging Face Mirror**: [https://huggingface.co/spaces/lavn1sh/tailortalk-saree-search](https://huggingface.co/spaces/lavn1sh/tailortalk-saree-search)
 
